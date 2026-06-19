@@ -92,17 +92,32 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--honey);outline-offs
   border-radius:999px;min-width:26px;height:26px;display:flex;align-items:center;justify-content:center;padding:0 8px}
 .cat-label h3{font-family:var(--maru);font-weight:700;font-size:19px;margin:0;letter-spacing:.04em}
 .cat-label .cnt{font-size:13px;color:var(--ink-soft);font-weight:500;margin-left:auto;font-family:var(--maru)}
-.rcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px 16px;margin-bottom:10px;
+.rcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:10px;
   box-shadow:var(--shadow-sm);display:flex;align-items:center;gap:12px}
-.rcard .rname{font-family:var(--maru);font-weight:700;font-size:16px;line-height:1.5;color:var(--ink)}
-.rcard .rphoto{margin-left:auto;flex:0 0 auto;width:56px;height:56px;border-radius:10px;
-  object-fit:cover;display:block;background:#EEF4EF}
+.rcard .rtext{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:7px}
+.rcard .rname{font-family:var(--maru);font-weight:700;font-size:16px;line-height:1.45;color:var(--ink)}
+.rcard .rphoto{flex:0 0 auto;width:56px;height:56px;border-radius:10px;object-fit:cover;display:block;background:#EEF4EF}
+.rbadge{align-self:flex-start;font-family:var(--maru);font-weight:700;font-size:11px;line-height:1;
+  padding:4px 10px;border-radius:6px;letter-spacing:.06em}
+.cat-kanso{background:#E2EDEF;color:#3C6B73}
+.cat-kounenki{background:#F4E4E1;color:#9C5A50}
+.cat-mansei{background:#E6EFE4;color:#4C7B58}
+.cat-gansei{background:#ECE6F1;color:#6B5E88}
+.cat-nemuri{background:#E5E8F1;color:#4E5680}
 .hidden-r{display:none}
 .more{margin:2px 0 4px;background:transparent;border:2px dashed var(--honey);color:var(--green);border-radius:14px;
   padding:12px;width:100%;cursor:pointer;font-family:var(--maru);font-weight:700;font-size:14px;letter-spacing:.04em;transition:background .2s;
   display:flex;align-items:center;justify-content:center;gap:8px}
 .more .chev{color:var(--honey);font-size:17px}
 .more:active{background:var(--honey-soft)}
+.see-all{width:100%;margin:10px 0 0;background:var(--green);color:#FFFDF8;border:none;border-radius:14px;
+  padding:15px;cursor:pointer;font-family:var(--maru);font-weight:700;font-size:15px;letter-spacing:.05em;
+  display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 5px 14px rgba(53,97,69,.22);transition:transform .12s ease}
+.see-all .chev{font-size:17px}
+.see-all:active{transform:scale(.99)}
+.full-panel{margin-top:16px}
+.reco-title{font-family:var(--maru);font-weight:700;font-size:17px;color:var(--ink);text-align:center;
+  letter-spacing:.05em;margin:4px 0 16px}
 .acc-toggle{width:100%;margin:6px 0 0;background:var(--surface);border:1px solid var(--line);border-radius:14px;
   padding:15px 18px;cursor:pointer;font-family:var(--maru);font-weight:700;font-size:15px;color:var(--green-deep);
   display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-sm);letter-spacing:.03em}
@@ -260,29 +275,28 @@ function diagnose(){
   let best=TYPE_ORDER[0]; TYPE_ORDER.forEach(t=>{if(sc[t]>sc[best])best=t;});
   return best;
 }
-function buildBlock(cat,list,no){
+const CATCLASS={"乾燥":"cat-kanso","更年期":"cat-kounenki","慢性疲労感":"cat-mansei","眼精疲労":"cat-gansei","眠り":"cat-nemuri"};
+function makeCard(r){
+  const c=document.createElement('div'); c.className='rcard';
+  const ph=PHOTOS[r.name]; const bc=CATCLASS[r.cat]||'';
+  c.innerHTML='<div class="rtext"><span class="rbadge '+bc+'">'+r.cat+'</span><span class="rname">'+r.name+'</span></div>'
+    +(ph?'<img class="rphoto" alt="'+r.name+'" src="data:image/jpeg;base64,'+ph+'">':'');
+  return c;
+}
+function buildGroup(list){            // 1カテゴリ分（見出しなし）／3品超で内側アコーディオン
   const block=document.createElement('div'); block.className='cat-block';
-  const head=document.createElement('div'); head.className='cat-label';
-  head.innerHTML='<span class="num">'+no+'</span><h3>'+cat+'</h3><span class="cnt">'+list.length+'品</span>';
-  block.appendChild(head);
   const LIMIT=3;
-  list.forEach((r,i)=>{
-    const c=document.createElement('div'); c.className='rcard'+(i>=LIMIT?' hidden-r acc-item':'');
-    var ph=PHOTOS[r.name];
-    c.innerHTML='<span class="rname">'+r.name+'</span>'+(ph?'<img class="rphoto" alt="'+r.name+'" src="data:image/jpeg;base64,'+ph+'">':'');
-    block.appendChild(c);
-  });
+  list.forEach((r,i)=>{const c=makeCard(r); if(i>=LIMIT)c.classList.add('hidden-r','acc-item'); block.appendChild(c);});
   if(list.length>LIMIT){
     const rest=list.length-LIMIT;
     const m=document.createElement('button'); m.className='more';
-    const baseLabel='ほかの'+rest+'品を見る';
-    m.innerHTML='<span class="more-lbl">'+baseLabel+'</span><span class="chev">＋</span>';
+    const base='ほかの'+rest+'品を見る';
+    m.innerHTML='<span class="more-lbl">'+base+'</span><span class="chev">＋</span>';
     m.onclick=()=>{
-      const opened=block.querySelectorAll('.acc-item.hidden-r').length===0;
       block.querySelectorAll('.acc-item').forEach(e=>e.classList.toggle('hidden-r'));
-      const nowOpen=block.querySelectorAll('.acc-item.hidden-r').length===0;
-      m.querySelector('.chev').textContent=nowOpen?'−':'＋';
-      m.querySelector('.more-lbl').textContent=nowOpen?'とじる':baseLabel;
+      const open=block.querySelectorAll('.acc-item.hidden-r').length===0;
+      m.querySelector('.chev').textContent=open?'−':'＋';
+      m.querySelector('.more-lbl').textContent=open?'とじる':base;
     };
     block.appendChild(m);
   }
@@ -292,13 +306,33 @@ function finish(){
   const type=diagnose();
   $('rType').textContent=type+"タイプ"; $('rYomi').textContent=YOMI[type]; $('rDesc').textContent=DESC[type];
   const cats=$('cats'); cats.innerHTML='';
-  let no=0;
-  CATS.forEach(cat=>{
-    const list=RECIPES.filter(r=>r.cat===cat && r.types.includes(type));
-    if(list.length===0) return;
-    no++;
-    cats.appendChild(buildBlock(cat,list,no));
-  });
+  const matched=CATS.map(cat=>({cat,list:RECIPES.filter(r=>r.cat===cat && r.types.includes(type))})).filter(o=>o.list.length>0);
+
+  const reco=document.createElement('p'); reco.className='reco-title'; reco.textContent='あなたにオススメのレシピ';
+  cats.appendChild(reco);
+
+  // 初期表示：先頭3カテゴリから1品ずつ（全体で最大3枚）
+  const preview=document.createElement('div'); preview.className='preview';
+  matched.slice(0,3).forEach(o=>preview.appendChild(makeCard(o.list[0])));
+  cats.appendChild(preview);
+
+  // 外側アコーディオン
+  const seeAll=document.createElement('button'); seeAll.className='see-all';
+  const baseL='全レシピを見る';
+  seeAll.innerHTML='<span class="sa-lbl">'+baseL+'</span><span class="chev">＋</span>';
+
+  // 全レシピ（全カテゴリ／各カテゴリ内は3品超で内側アコーディオン）
+  const full=document.createElement('div'); full.className='full-panel'; full.style.display='none';
+  matched.forEach(o=>full.appendChild(buildGroup(o.list)));
+
+  seeAll.onclick=()=>{
+    const open=full.style.display==='none';
+    full.style.display=open?'block':'none';
+    preview.style.display=open?'none':'block';
+    seeAll.querySelector('.chev').textContent=open?'−':'＋';
+    seeAll.querySelector('.sa-lbl').textContent=open?'とじる':baseL;
+  };
+  cats.appendChild(seeAll); cats.appendChild(full);
   show('result');
 }
 $('startBtn').onclick=()=>{qi=0;answers.fill(null);renderQ();show('quiz');};
